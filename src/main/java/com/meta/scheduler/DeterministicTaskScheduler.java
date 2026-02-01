@@ -101,4 +101,15 @@ public final class DeterministicTaskScheduler implements TaskScheduler {
             t.executed = true;
         }
     }
+
+    @Override
+    public long nextRunAtMillis() {
+        // Find the first task that is not canceled and not executed
+        for (ScheduledTask t : pq) {
+            if (!t.canceled && !t.executed) {
+                return t.runAtMillis;
+            }
+        }
+        return -1; // No pending tasks
+    }
 }
