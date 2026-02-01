@@ -8,6 +8,7 @@ public final class DeterministicTaskScheduler implements TaskScheduler {
     private final Clock clock;
     private final AtomicLong idGen = new AtomicLong(1);
     private final AtomicLong seqGen = new AtomicLong(1);
+    private final int maxPendingTasks; // Maximum capacity (-1 = unlimited)
 
     // FIXED: comparator tie-breaker for FIFO by seq ascending
     private final PriorityQueue<ScheduledTask> pq = new PriorityQueue<>(
@@ -20,14 +21,46 @@ public final class DeterministicTaskScheduler implements TaskScheduler {
 
     private final Map<Long, ScheduledTask> byId = new HashMap<>();
 
+    /**
+     * Creates a scheduler with unlimited capacity.
+     */
     public DeterministicTaskScheduler(Clock clock) {
+        this(clock, -1); // -1 means unlimited
+    }
+
+    /**
+     * Creates a scheduler with a maximum capacity.
+     * 
+     * @param clock           the clock for time control
+     * @param maxPendingTasks maximum number of pending tasks (-1 for unlimited)
+     * @throws IllegalArgumentException if maxPendingTasks < -1 or == 0
+     */
+    public DeterministicTaskScheduler(Clock clock, int maxPendingTasks) {
+        if (maxPendingTasks < -1 || maxPendingTasks == 0) {
+            throw new IllegalArgumentException(
+                    "maxPendingTasks must be > 0 or -1 for unlimited");
+        }
         this.clock = Objects.requireNonNull(clock);
+        this.maxPendingTasks = maxPendingTasks;
+    }
+
+    /**
+     * Checks if adding a new task would exceed capacity.
+     * 
+     * @throws SchedulerCapacityExceededException if at capacity
+     */
+    private void checkCapacity() {
+        if (maxPendingTasks > 0 && pendingCount() >= maxPendingTasks) {
+            throw new SchedulerCapacityExceededException(maxPendingTasks, pendingCount());
+        }
     }
 
     @Override
     public TaskHandle schedule(long delayMillis, Runnable task) {
         if (delayMillis < 0)
             throw new IllegalArgumentException("delayMillis must be >= 0");
+
+        checkCapacity(); // Check capacity before scheduling
 
         long id = idGen.getAndIncrement();
         long runAt = clock.now() + delayMillis;
@@ -126,6 +159,8 @@ public final class DeterministicTaskScheduler implements TaskScheduler {
         if (delayMs < 0)
             throw new IllegalArgumentException("delayMs must be >= 0");
 
+        checkCapacity(); // Check capacity before scheduling
+
         long id = idGen.getAndIncrement();
         long runAt = clock.now() + initialDelayMs;
         long seq = seqGen.getAndIncrement();
@@ -176,6 +211,8 @@ public final class DeterministicTaskScheduler implements TaskScheduler {
             throw new IllegalArgumentException("initialDelayMs must be >= 0");
         if (periodMs < 0)
             throw new IllegalArgumentException("periodMs must be >= 0");
+
+        checkCapacity(); // Check capacity before scheduling
 
         long id = idGen.getAndIncrement();
         long runAt = clock.now() + initialDelayMs;

@@ -12,6 +12,7 @@ The scheduler does NOT use threads or sleeping. Tests drive time via an injected
   - `scheduleAtFixedDelay()` for fixed-delay periodic scheduling
   - `scheduleAtFixedRate()` for fixed-rate periodic scheduling
   - `pendingTasks()` for task metadata and debugging
+  - **Capacity guardrails** to prevent unbounded task growth
 
 ## Features
 
@@ -23,6 +24,7 @@ The scheduler does NOT use threads or sleeping. Tests drive time via an injected
 - **NEW**: Schedule periodic tasks with fixed delay using `scheduleAtFixedDelay()`
 - **NEW**: Schedule periodic tasks with fixed rate using `scheduleAtFixedRate()`
 - **NEW**: Get detailed task metadata with `pendingTasks()` for debugging
+- **NEW**: Set maximum capacity limit to prevent unbounded growth
 - Deterministic execution (no threads, controlled time via `Clock` interface)
 - FIFO ordering for tasks scheduled at the same time
 
@@ -39,7 +41,7 @@ mvn test
 
 **Expected output:**
 ```
-Tests run: 73, Failures: 0, Errors: 0, Skipped: 0 ✅
+Tests run: 87, Failures: 0, Errors: 0, Skipped: 0 ✅
 ```
 
 ## Documentation
@@ -51,6 +53,7 @@ Tests run: 73, Failures: 0, Errors: 0, Skipped: 0 ✅
 - **[FEATURE_PERIODIC_TASKS.md](FEATURE_PERIODIC_TASKS.md)** - `scheduleAtFixedDelay()` periodic scheduling feature
 - **[FEATURE_FIXED_RATE.md](FEATURE_FIXED_RATE.md)** - `scheduleAtFixedRate()` fixed-rate scheduling feature
 - **[FEATURE_TASK_INTROSPECTION.md](FEATURE_TASK_INTROSPECTION.md)** - `pendingTasks()` task metadata and debugging feature
+- **[FEATURE_CAPACITY_GUARDRAILS.md](FEATURE_CAPACITY_GUARDRAILS.md)** - Capacity limits to prevent unbounded growth
 
 ## API
 
@@ -69,6 +72,10 @@ public interface TaskScheduler {
                                    Runnable task);
     List<TaskInfo> pendingTasks();                             // Get metadata for all pending tasks
 }
+
+// Scheduler with capacity limit
+new DeterministicTaskScheduler(clock);                         // Unlimited capacity (default)
+new DeterministicTaskScheduler(clock, maxPendingTasks);        // With capacity limit
 
 public interface TaskHandle {
     void cancel();
