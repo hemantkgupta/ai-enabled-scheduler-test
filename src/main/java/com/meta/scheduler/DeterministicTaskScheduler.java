@@ -282,4 +282,33 @@ public final class DeterministicTaskScheduler implements TaskScheduler {
             tick();
         }
     }
+
+    @Override
+    public java.util.List<TaskInfo> pendingTasks() {
+        java.util.List<TaskInfo> result = new java.util.ArrayList<>();
+
+        // Create sorted list of pending tasks (by scheduled time, then sequence)
+        java.util.List<ScheduledTask> sortedTasks = new java.util.ArrayList<>();
+        for (ScheduledTask t : pq) {
+            if (!t.canceled && !t.executed) {
+                sortedTasks.add(t);
+            }
+        }
+
+        // Already sorted by priority queue comparator (time, then sequence)
+        // But we need to explicitly sort since iteration order isn't guaranteed
+        sortedTasks.sort((a, b) -> {
+            int cmp = Long.compare(a.runAtMillis, b.runAtMillis);
+            if (cmp != 0)
+                return cmp;
+            return Long.compare(a.seq, b.seq);
+        });
+
+        // Convert to TaskInfo
+        for (ScheduledTask t : sortedTasks) {
+            result.add(new TaskInfo(t.id, t.runAtMillis, t.isPeriodic, t.isFixedRate, t.periodMs));
+        }
+
+        return java.util.Collections.unmodifiableList(result);
+    }
 }

@@ -11,6 +11,7 @@ The scheduler does NOT use threads or sleeping. Tests drive time via an injected
   - `tickUntilIdle()` for automated task execution
   - `scheduleAtFixedDelay()` for fixed-delay periodic scheduling
   - `scheduleAtFixedRate()` for fixed-rate periodic scheduling
+  - `pendingTasks()` for task metadata and debugging
 
 ## Features
 
@@ -21,6 +22,7 @@ The scheduler does NOT use threads or sleeping. Tests drive time via an injected
 - **NEW**: Execute all scheduled tasks automatically with `tickUntilIdle()`
 - **NEW**: Schedule periodic tasks with fixed delay using `scheduleAtFixedDelay()`
 - **NEW**: Schedule periodic tasks with fixed rate using `scheduleAtFixedRate()`
+- **NEW**: Get detailed task metadata with `pendingTasks()` for debugging
 - Deterministic execution (no threads, controlled time via `Clock` interface)
 - FIFO ordering for tasks scheduled at the same time
 
@@ -37,7 +39,7 @@ mvn test
 
 **Expected output:**
 ```
-Tests run: 58, Failures: 0, Errors: 0, Skipped: 0 ✅
+Tests run: 73, Failures: 0, Errors: 0, Skipped: 0 ✅
 ```
 
 ## Documentation
@@ -48,6 +50,7 @@ Tests run: 58, Failures: 0, Errors: 0, Skipped: 0 ✅
 - **[FEATURE_TICKUNTILIDLE.md](FEATURE_TICKUNTILIDLE.md)** - `tickUntilIdle()` automated execution feature
 - **[FEATURE_PERIODIC_TASKS.md](FEATURE_PERIODIC_TASKS.md)** - `scheduleAtFixedDelay()` periodic scheduling feature
 - **[FEATURE_FIXED_RATE.md](FEATURE_FIXED_RATE.md)** - `scheduleAtFixedRate()` fixed-rate scheduling feature
+- **[FEATURE_TASK_INTROSPECTION.md](FEATURE_TASK_INTROSPECTION.md)** - `pendingTasks()` task metadata and debugging feature
 
 ## API
 
@@ -64,11 +67,20 @@ public interface TaskScheduler {
     TaskHandle scheduleAtFixedRate(long initialDelayMs,        // Schedule periodic task (fixed rate)
                                    long periodMs,
                                    Runnable task);
+    List<TaskInfo> pendingTasks();                             // Get metadata for all pending tasks
 }
 
 public interface TaskHandle {
     void cancel();
     void reschedule(long newDelayMillis);
     long id();
+}
+
+public final class TaskInfo {
+    public long getId();                 // Task ID
+    public long getScheduledTimeMs();    // Scheduled execution time
+    public boolean isPeriodic();         // Is periodic task?
+    public boolean isFixedRate();        // Is fixed rate (vs fixed delay)?
+    public long getPeriodMs();           // Period/delay (0 for one-time)
 }
 ```

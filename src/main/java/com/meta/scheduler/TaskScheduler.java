@@ -44,4 +44,12 @@ public interface TaskScheduler {
      * @return handle to control the periodic task
      */
     TaskHandle scheduleAtFixedRate(long initialDelayMs, long periodMs, Runnable task);
+
+    /**
+     * Returns metadata about all pending tasks for debugging and observability.
+     * Tasks are returned in execution order (earliest first).
+     * 
+     * @return immutable list of task metadata snapshots
+     */
+    java.util.List<TaskInfo> pendingTasks();
 }
