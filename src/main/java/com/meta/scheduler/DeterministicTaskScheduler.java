@@ -98,8 +98,66 @@ public final class DeterministicTaskScheduler implements TaskScheduler {
                 continue;
 
             t.runnable.run();
-            t.executed = true;
+
+            // Handle periodic tasks - reschedule after execution
+            if (t.isPeriodic && !t.canceled) {
+                t.executed = false; // Reset for next execution
+                t.runAtMillis = clock.now() + t.fixedDelayMs; // Fixed delay from completion
+                pq.add(t); // Reschedule
+            } else {
+                t.executed = true;
+            }
         }
+    }
+
+    @Override
+    public TaskHandle scheduleAtFixedDelay(long initialDelayMs, long delayMs, Runnable task) {
+        if (initialDelayMs < 0)
+            throw new IllegalArgumentException("initialDelayMs must be >= 0");
+        if (delayMs < 0)
+            throw new IllegalArgumentException("delayMs must be >= 0");
+
+        long id = idGen.getAndIncrement();
+        long runAt = clock.now() + initialDelayMs;
+        long seq = seqGen.getAndIncrement();
+
+        ScheduledTask st = new ScheduledTask(id, runAt, seq, task, true, delayMs);
+        pq.add(st);
+        byId.put(id, st);
+
+        return new TaskHandle() {
+            @Override
+            public void cancel() {
+                // Mark as canceled so it won't reschedule
+                ScheduledTask t = byId.remove(id);
+                if (t != null) {
+                    t.canceled = true;
+                }
+            }
+
+            @Override
+            public void reschedule(long newDelayMillis) {
+                if (newDelayMillis < 0)
+                    throw new IllegalArgumentException("newDelayMillis must be >= 0");
+                ScheduledTask t = byId.get(id);
+                if (t == null)
+                    return; // treat missing as canceled
+                if (t.executed)
+                    return;
+
+                // For periodic tasks, reschedule just moves the next execution
+                t.runAtMillis = clock.now() + newDelayMillis;
+
+                // Remove and re-add to properly reorder
+                pq.remove(t);
+                pq.add(t);
+            }
+
+            @Override
+            public long id() {
+                return id;
+            }
+        };
     }
 
     @Override
@@ -118,6 +176,9 @@ public final class DeterministicTaskScheduler implements TaskScheduler {
         // Snapshot the current max task ID to avoid executing tasks scheduled during
         // execution
         long maxIdAtStart = idGen.get() - 1;
+
+        // Track which periodic tasks have been executed at least once
+        java.util.Set<Long> executedPeriodicIds = new java.util.HashSet<>();
 
         while (true) {
             long next = nextRunAtMillis();
@@ -141,9 +202,19 @@ public final class DeterministicTaskScheduler implements TaskScheduler {
                 break;
             }
 
+            // If next task is periodic and we've already executed it once, stop
+            if (nextTask != null && nextTask.isPeriodic && executedPeriodicIds.contains(nextTask.id)) {
+                break;
+            }
+
             // Advance clock to the next task's time
             if (nextTask != null) {
                 ((FakeClock) clock).set(nextTask.runAtMillis);
+
+                // Track periodic task execution
+                if (nextTask.isPeriodic) {
+                    executedPeriodicIds.add(nextTask.id);
+                }
             }
 
             // Execute tasks at this time

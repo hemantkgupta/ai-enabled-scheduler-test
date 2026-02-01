@@ -9,6 +9,7 @@ The scheduler does NOT use threads or sleeping. Tests drive time via an injected
 ✅ New features added:
   - `nextRunAtMillis()` for scheduler introspection
   - `tickUntilIdle()` for automated task execution
+  - `scheduleAtFixedDelay()` for periodic task scheduling
 
 ## Features
 
@@ -17,6 +18,7 @@ The scheduler does NOT use threads or sleeping. Tests drive time via an injected
 - Reschedule existing tasks
 - **NEW**: Introspect next scheduled task time with `nextRunAtMillis()`
 - **NEW**: Execute all scheduled tasks automatically with `tickUntilIdle()`
+- **NEW**: Schedule periodic tasks with `scheduleAtFixedDelay()`
 - Deterministic execution (no threads, controlled time via `Clock` interface)
 - FIFO ordering for tasks scheduled at the same time
 
@@ -33,7 +35,7 @@ mvn test
 
 **Expected output:**
 ```
-Tests run: 32, Failures: 0, Errors: 0, Skipped: 0 ✅
+Tests run: 45, Failures: 0, Errors: 0, Skipped: 0 ✅
 ```
 
 ## Documentation
@@ -42,6 +44,7 @@ Tests run: 32, Failures: 0, Errors: 0, Skipped: 0 ✅
 - **[FIXES_EXPLAINED.md](FIXES_EXPLAINED.md)** - Detailed explanations of each bug fix
 - **[FEATURE_NEXTRUNATMILLIS.md](FEATURE_NEXTRUNATMILLIS.md)** - `nextRunAtMillis()` introspection feature
 - **[FEATURE_TICKUNTILIDLE.md](FEATURE_TICKUNTILIDLE.md)** - `tickUntilIdle()` automated execution feature
+- **[FEATURE_PERIODIC_TASKS.md](FEATURE_PERIODIC_TASKS.md)** - `scheduleAtFixedDelay()` periodic scheduling feature
 
 ## API
 
@@ -50,8 +53,11 @@ public interface TaskScheduler {
     TaskHandle schedule(long delayMillis, Runnable task);
     int pendingCount();
     void tick();
-    long nextRunAtMillis();  // Returns time of next task or -1 if none
-    void tickUntilIdle();    // Execute all currently scheduled tasks
+    long nextRunAtMillis();                                    // Returns time of next task or -1 if none
+    void tickUntilIdle();                                      // Execute all currently scheduled tasks
+    TaskHandle scheduleAtFixedDelay(long initialDelayMs,       // Schedule periodic task
+                                    long delayMs, 
+                                    Runnable task);
 }
 
 public interface TaskHandle {

@@ -20,4 +20,16 @@ public interface TaskScheduler {
      * Tasks scheduled during execution of other tasks are NOT executed.
      */
     void tickUntilIdle();
+
+    /**
+     * Schedules a periodic task with fixed delay semantics.
+     * The delay is measured from the end of one execution to the start of the next.
+     * 
+     * @param initialDelayMs delay before first execution
+     * @param delayMs        delay between subsequent executions (after previous
+     *                       completes)
+     * @param task           the task to execute periodically
+     * @return handle to control the periodic task
+     */
+    TaskHandle scheduleAtFixedDelay(long initialDelayMs, long delayMs, Runnable task);
 }
