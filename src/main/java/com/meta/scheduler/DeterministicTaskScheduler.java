@@ -102,7 +102,16 @@ public final class DeterministicTaskScheduler implements TaskScheduler {
             // Handle periodic tasks - reschedule after execution
             if (t.isPeriodic && !t.canceled) {
                 t.executed = false; // Reset for next execution
-                t.runAtMillis = clock.now() + t.fixedDelayMs; // Fixed delay from completion
+
+                // Calculate next run time based on scheduling mode
+                if (t.isFixedRate) {
+                    // Fixed rate: period from START of this execution
+                    t.runAtMillis = t.runAtMillis + t.periodMs;
+                } else {
+                    // Fixed delay: delay from END of this execution (completion)
+                    t.runAtMillis = clock.now() + t.periodMs;
+                }
+
                 pq.add(t); // Reschedule
             } else {
                 t.executed = true;
@@ -121,7 +130,59 @@ public final class DeterministicTaskScheduler implements TaskScheduler {
         long runAt = clock.now() + initialDelayMs;
         long seq = seqGen.getAndIncrement();
 
-        ScheduledTask st = new ScheduledTask(id, runAt, seq, task, true, delayMs);
+        // isPeriodic=true, isFixedRate=false for fixed delay
+        ScheduledTask st = new ScheduledTask(id, runAt, seq, task, true, false, delayMs);
+        pq.add(st);
+        byId.put(id, st);
+
+        return new TaskHandle() {
+            @Override
+            public void cancel() {
+                // Mark as canceled so it won't reschedule
+                ScheduledTask t = byId.remove(id);
+                if (t != null) {
+                    t.canceled = true;
+                }
+            }
+
+            @Override
+            public void reschedule(long newDelayMillis) {
+                if (newDelayMillis < 0)
+                    throw new IllegalArgumentException("newDelayMillis must be >= 0");
+                ScheduledTask t = byId.get(id);
+                if (t == null)
+                    return; // treat missing as canceled
+                if (t.executed)
+                    return;
+
+                // For periodic tasks, reschedule just moves the next execution
+                t.runAtMillis = clock.now() + newDelayMillis;
+
+                // Remove and re-add to properly reorder
+                pq.remove(t);
+                pq.add(t);
+            }
+
+            @Override
+            public long id() {
+                return id;
+            }
+        };
+    }
+
+    @Override
+    public TaskHandle scheduleAtFixedRate(long initialDelayMs, long periodMs, Runnable task) {
+        if (initialDelayMs < 0)
+            throw new IllegalArgumentException("initialDelayMs must be >= 0");
+        if (periodMs < 0)
+            throw new IllegalArgumentException("periodMs must be >= 0");
+
+        long id = idGen.getAndIncrement();
+        long runAt = clock.now() + initialDelayMs;
+        long seq = seqGen.getAndIncrement();
+
+        // isPeriodic=true, isFixedRate=true for fixed rate
+        ScheduledTask st = new ScheduledTask(id, runAt, seq, task, true, true, periodMs);
         pq.add(st);
         byId.put(id, st);
 

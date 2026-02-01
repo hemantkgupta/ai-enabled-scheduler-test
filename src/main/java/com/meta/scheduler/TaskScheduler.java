@@ -32,4 +32,16 @@ public interface TaskScheduler {
      * @return handle to control the periodic task
      */
     TaskHandle scheduleAtFixedDelay(long initialDelayMs, long delayMs, Runnable task);
+
+    /**
+     * Schedules a periodic task with fixed rate semantics.
+     * The period is measured from the start of one execution to the start of the
+     * next.
+     * 
+     * @param initialDelayMs delay before first execution
+     * @param periodMs       period between execution starts
+     * @param task           the task to execute periodically
+     * @return handle to control the periodic task
+     */
+    TaskHandle scheduleAtFixedRate(long initialDelayMs, long periodMs, Runnable task);
 }

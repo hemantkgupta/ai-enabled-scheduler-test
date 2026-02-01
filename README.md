@@ -9,7 +9,8 @@ The scheduler does NOT use threads or sleeping. Tests drive time via an injected
 ✅ New features added:
   - `nextRunAtMillis()` for scheduler introspection
   - `tickUntilIdle()` for automated task execution
-  - `scheduleAtFixedDelay()` for periodic task scheduling
+  - `scheduleAtFixedDelay()` for fixed-delay periodic scheduling
+  - `scheduleAtFixedRate()` for fixed-rate periodic scheduling
 
 ## Features
 
@@ -18,7 +19,8 @@ The scheduler does NOT use threads or sleeping. Tests drive time via an injected
 - Reschedule existing tasks
 - **NEW**: Introspect next scheduled task time with `nextRunAtMillis()`
 - **NEW**: Execute all scheduled tasks automatically with `tickUntilIdle()`
-- **NEW**: Schedule periodic tasks with `scheduleAtFixedDelay()`
+- **NEW**: Schedule periodic tasks with fixed delay using `scheduleAtFixedDelay()`
+- **NEW**: Schedule periodic tasks with fixed rate using `scheduleAtFixedRate()`
 - Deterministic execution (no threads, controlled time via `Clock` interface)
 - FIFO ordering for tasks scheduled at the same time
 
@@ -35,7 +37,7 @@ mvn test
 
 **Expected output:**
 ```
-Tests run: 45, Failures: 0, Errors: 0, Skipped: 0 ✅
+Tests run: 58, Failures: 0, Errors: 0, Skipped: 0 ✅
 ```
 
 ## Documentation
@@ -45,6 +47,7 @@ Tests run: 45, Failures: 0, Errors: 0, Skipped: 0 ✅
 - **[FEATURE_NEXTRUNATMILLIS.md](FEATURE_NEXTRUNATMILLIS.md)** - `nextRunAtMillis()` introspection feature
 - **[FEATURE_TICKUNTILIDLE.md](FEATURE_TICKUNTILIDLE.md)** - `tickUntilIdle()` automated execution feature
 - **[FEATURE_PERIODIC_TASKS.md](FEATURE_PERIODIC_TASKS.md)** - `scheduleAtFixedDelay()` periodic scheduling feature
+- **[FEATURE_FIXED_RATE.md](FEATURE_FIXED_RATE.md)** - `scheduleAtFixedRate()` fixed-rate scheduling feature
 
 ## API
 
@@ -55,9 +58,12 @@ public interface TaskScheduler {
     void tick();
     long nextRunAtMillis();                                    // Returns time of next task or -1 if none
     void tickUntilIdle();                                      // Execute all currently scheduled tasks
-    TaskHandle scheduleAtFixedDelay(long initialDelayMs,       // Schedule periodic task
+    TaskHandle scheduleAtFixedDelay(long initialDelayMs,       // Schedule periodic task (fixed delay)
                                     long delayMs, 
                                     Runnable task);
+    TaskHandle scheduleAtFixedRate(long initialDelayMs,        // Schedule periodic task (fixed rate)
+                                   long periodMs,
+                                   Runnable task);
 }
 
 public interface TaskHandle {

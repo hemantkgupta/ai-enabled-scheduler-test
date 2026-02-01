@@ -13,18 +13,21 @@ final class ScheduledTask {
 
     // For periodic tasks
     final boolean isPeriodic;
-    final long fixedDelayMs; // delay after execution completes
+    final boolean isFixedRate; // true = fixed rate, false = fixed delay
+    final long periodMs; // period for fixed rate OR delay for fixed delay
 
     ScheduledTask(long id, long runAtMillis, long seq, Runnable runnable) {
-        this(id, runAtMillis, seq, runnable, false, 0);
+        this(id, runAtMillis, seq, runnable, false, false, 0);
     }
 
-    ScheduledTask(long id, long runAtMillis, long seq, Runnable runnable, boolean isPeriodic, long fixedDelayMs) {
+    ScheduledTask(long id, long runAtMillis, long seq, Runnable runnable,
+            boolean isPeriodic, boolean isFixedRate, long periodMs) {
         this.id = id;
         this.runAtMillis = runAtMillis;
         this.seq = seq;
         this.runnable = Objects.requireNonNull(runnable);
         this.isPeriodic = isPeriodic;
-        this.fixedDelayMs = fixedDelayMs;
+        this.isFixedRate = isFixedRate;
+        this.periodMs = periodMs;
     }
 }
