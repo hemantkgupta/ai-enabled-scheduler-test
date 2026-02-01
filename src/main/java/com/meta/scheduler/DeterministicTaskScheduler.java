@@ -112,4 +112,42 @@ public final class DeterministicTaskScheduler implements TaskScheduler {
         }
         return -1; // No pending tasks
     }
+
+    @Override
+    public void tickUntilIdle() {
+        // Snapshot the current max task ID to avoid executing tasks scheduled during
+        // execution
+        long maxIdAtStart = idGen.get() - 1;
+
+        while (true) {
+            long next = nextRunAtMillis();
+
+            // No more pending tasks
+            if (next == -1) {
+                break;
+            }
+
+            // Check if the next task was scheduled before we started
+            ScheduledTask nextTask = null;
+            for (ScheduledTask t : pq) {
+                if (!t.canceled && !t.executed) {
+                    nextTask = t;
+                    break;
+                }
+            }
+
+            // If next task was scheduled after we started, stop
+            if (nextTask != null && nextTask.id > maxIdAtStart) {
+                break;
+            }
+
+            // Advance clock to the next task's time
+            if (nextTask != null) {
+                ((FakeClock) clock).set(nextTask.runAtMillis);
+            }
+
+            // Execute tasks at this time
+            tick();
+        }
+    }
 }
