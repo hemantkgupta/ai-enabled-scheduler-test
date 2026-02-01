@@ -13,6 +13,7 @@ The scheduler does NOT use threads or sleeping. Tests drive time via an injected
   - `scheduleAtFixedRate()` for fixed-rate periodic scheduling
   - `pendingTasks()` for task metadata and debugging
   - **Capacity guardrails** to prevent unbounded task growth
+  - **Deterministic task IDs** for reliable task tracking
 
 ## Features
 
@@ -25,6 +26,7 @@ The scheduler does NOT use threads or sleeping. Tests drive time via an injected
 - **NEW**: Schedule periodic tasks with fixed rate using `scheduleAtFixedRate()`
 - **NEW**: Get detailed task metadata with `pendingTasks()` for debugging
 - **NEW**: Set maximum capacity limit to prevent unbounded growth
+- **NEW**: Deterministic, unique, strictly-increasing task IDs
 - Deterministic execution (no threads, controlled time via `Clock` interface)
 - FIFO ordering for tasks scheduled at the same time
 
@@ -41,7 +43,7 @@ mvn test
 
 **Expected output:**
 ```
-Tests run: 87, Failures: 0, Errors: 0, Skipped: 0 ✅
+Tests run: 100, Failures: 0, Errors: 0, Skipped: 0 ✅
 ```
 
 ## Documentation
@@ -54,6 +56,7 @@ Tests run: 87, Failures: 0, Errors: 0, Skipped: 0 ✅
 - **[FEATURE_FIXED_RATE.md](FEATURE_FIXED_RATE.md)** - `scheduleAtFixedRate()` fixed-rate scheduling feature
 - **[FEATURE_TASK_INTROSPECTION.md](FEATURE_TASK_INTROSPECTION.md)** - `pendingTasks()` task metadata and debugging feature
 - **[FEATURE_CAPACITY_GUARDRAILS.md](FEATURE_CAPACITY_GUARDRAILS.md)** - Capacity limits to prevent unbounded growth
+- **[FEATURE_DETERMINISTIC_TASK_IDS.md](FEATURE_DETERMINISTIC_TASK_IDS.md)** - Deterministic task IDs for reliable tracking
 
 ## API
 
@@ -80,11 +83,11 @@ new DeterministicTaskScheduler(clock, maxPendingTasks);        // With capacity 
 public interface TaskHandle {
     void cancel();
     void reschedule(long newDelayMillis);
-    long id();
+    long id();                                                 // Unique, strictly-increasing task ID
 }
 
 public final class TaskInfo {
-    public long getId();                 // Task ID
+    public long getId();                 // Task ID (unique, strictly-increasing)
     public long getScheduledTimeMs();    // Scheduled execution time
     public boolean isPeriodic();         // Is periodic task?
     public boolean isFixedRate();        // Is fixed rate (vs fixed delay)?
